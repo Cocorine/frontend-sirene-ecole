@@ -1,0 +1,162 @@
+import { createRouter, createWebHistory } from 'vue-router'
+import type { RouteRecordRaw } from 'vue-router'
+import { AUTH_CONFIG } from '../config/api'
+
+const routes: RouteRecordRaw[] = [
+  {
+    path: '/',
+    redirect: '/dashboard'
+  },
+  {
+    path: '/dashboard',
+    name: 'Dashboard',
+    component: () => import('../views/DashboardView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/LoginView.vue'),
+    meta: { guest: true }
+  },
+  {
+    path: '/auth/otp',
+    name: 'OTP',
+    component: () => import('../views/OTPView.vue'),
+    meta: { guest: true }
+  },
+  {
+    path: '/schools',
+    name: 'Schools',
+    component: () => import('../views/SchoolsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/schools/:id',
+    name: 'SchoolDetail',
+    component: () => import('../views/SchoolDetailView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/sirens',
+    name: 'Sirens',
+    component: () => import('../views/SirensView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/breakdowns',
+    name: 'Breakdowns',
+    component: () => import('../views/BreakdownsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/technicians',
+    name: 'Technicians',
+    component: () => import('../views/TechniciansView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/subscriptions',
+    name: 'Subscriptions',
+    component: () => import('../views/SubscriptionsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/calendar',
+    name: 'Calendar',
+    component: () => import('../views/CalendarView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/countries',
+    name: 'Countries',
+    component: () => import('../views/CountriesView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/users',
+    name: 'Users',
+    component: () => import('../views/UsersView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/roles',
+    name: 'Roles',
+    component: () => import('../views/RolesView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/siren-models',
+    name: 'SirenModels',
+    component: () => import('../views/SirenModelsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/settings',
+    name: 'Settings',
+    component: () => import('../views/SettingsView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/work-orders',
+    name: 'WorkOrders',
+    component: () => import('../views/WorkOrdersView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/work-orders/:id',
+    name: 'WorkOrderDetail',
+    component: () => import('../views/WorkOrderDetailView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('../views/ProfileView.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/reports',
+    name: 'Reports',
+    component: () => import('../views/ReportsView.vue'),
+    meta: { requiresAuth: true }
+  }
+]
+
+const router = createRouter({
+  history: createWebHistory(),
+  routes
+})
+
+// Navigation Guard
+router.beforeEach((to, from, next) => {
+  const token = localStorage.getItem(AUTH_CONFIG.tokenKey)
+  const isAuthenticated = !!token
+
+  console.log('Navigation Guard:', {
+    to: to.path,
+    from: from.path,
+    hasToken: !!token,
+    requiresAuth: to.meta.requiresAuth,
+    isGuest: to.meta.guest
+  })
+
+  // If route requires authentication and user is not authenticated
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    console.log('Redirecting to login: no token and route requires auth')
+    next('/login')
+    return
+  }
+
+  // If route is for guests only and user is authenticated
+  if (to.meta.guest && isAuthenticated) {
+    console.log('Redirecting to dashboard: has token and route is for guests only')
+    next('/dashboard')
+    return
+  }
+
+  console.log('Navigation allowed')
+  next()
+})
+
+export default router
