@@ -117,6 +117,8 @@ loadUsers()
 - **Téléphone** : `user_info.telephone`
 - **Identifiant** : `identifiant`
 - **Adresse** : `user_info.adresse`
+- **Ville** : `user_info.ville.nom` avec code postal
+- **Pays** : `user_info.ville.pays.nom` avec code ISO (si la ville a un pays associé)
 - **Date de création** : `created_at` (formatée en français)
 - **Avertissement** : Si `doit_changer_mot_de_passe` est vrai
 
@@ -192,6 +194,27 @@ const handleDelete = async (user: ApiUserData) => {
 ## Structure de données attendue
 
 ```typescript
+interface ApiPays {
+  id: string
+  nom: string
+  code_iso: string
+  indicatif_tel: string
+  devise: string
+  fuseau_horaire: string
+  actif: boolean
+}
+
+interface ApiVille {
+  id: string
+  pays_id: string
+  nom: string
+  code: string
+  latitude: number | null
+  longitude: number | null
+  actif: boolean
+  pays?: ApiPays
+}
+
 interface ApiUserData {
   id: string
   nom_utilisateur: string
@@ -205,11 +228,15 @@ interface ApiUserData {
     slug: string
   }
   user_info?: {
+    id: string
+    user_id: string
     nom: string
     prenom: string
     telephone: string
     email: string | null
+    ville_id: string | null
     adresse: string | null
+    ville?: ApiVille | null
   }
   doit_changer_mot_de_passe?: boolean
   created_at?: string

@@ -36,6 +36,35 @@ export interface ApiRole {
   updated_at?: string
 }
 
+// ==================== Géographie (Pays & Ville) ====================
+
+export interface ApiPays {
+  id: string
+  nom: string
+  code_iso: string
+  indicatif_tel: string
+  devise: string
+  fuseau_horaire: string
+  actif: boolean
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
+}
+
+export interface ApiVille {
+  id: string
+  pays_id: string
+  nom: string
+  code: string
+  latitude: number | null
+  longitude: number | null
+  actif: boolean
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
+  pays?: ApiPays
+}
+
 // ==================== User ====================
 
 export interface ApiUser {
@@ -174,6 +203,7 @@ export interface ApiUserInfo {
   created_at?: string
   updated_at?: string
   deleted_at?: string | null
+  ville?: ApiVille | null
 }
 
 export interface ApiUserData {
