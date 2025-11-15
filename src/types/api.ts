@@ -196,7 +196,7 @@ export interface CreateUserRequest {
   email?: string | null
   telephone?: string | null
   mot_de_passe: string
-  type: string
+  type?: string
   role_id?: string
 }
 

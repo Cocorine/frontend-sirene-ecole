@@ -87,29 +87,6 @@
             <p v-if="errors.telephone" id="telephone-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.telephone }}</p>
           </div>
 
-          <!-- Type d'utilisateur -->
-          <div>
-            <label for="type" class="block text-sm font-semibold text-gray-700 mb-2">
-              Type d'utilisateur <span class="text-red-500">*</span>
-            </label>
-            <select
-              id="type"
-              v-model="formData.type"
-              required
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
-              :class="{ 'border-red-500': errors.type }"
-              :aria-invalid="!!errors.type"
-              :aria-describedby="errors.type ? 'type-error' : undefined"
-            >
-              <option value="">Sélectionner un type</option>
-              <option value="ADMIN">Administrateur</option>
-              <option value="USER">Utilisateur</option>
-              <option value="ECOLE">École</option>
-              <option value="TECHNICIEN">Technicien</option>
-            </select>
-            <p v-if="errors.type" id="type-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.type }}</p>
-          </div>
-
           <!-- Mot de passe (uniquement en création) -->
           <div v-if="!isEditMode">
             <label for="mot_de_passe" class="block text-sm font-semibold text-gray-700 mb-2">
@@ -215,7 +192,6 @@ const formData = ref<CreateUserRequest & UpdateUserRequest>({
   email: '',
   telephone: '',
   mot_de_passe: '',
-  type: '',
   role_id: ''
 })
 
@@ -251,10 +227,6 @@ const validateForm = (): boolean => {
     errors.value.telephone = 'Le téléphone est requis'
   }
 
-  if (!formData.value.type) {
-    errors.value.type = 'Le type est requis'
-  }
-
   if (!isEditMode.value && !formData.value.mot_de_passe?.trim()) {
     errors.value.mot_de_passe = 'Le mot de passe est requis'
   }
@@ -280,7 +252,6 @@ const handleSubmit = async () => {
         nom_utilisateur: formData.value.nom_utilisateur,
         email: formData.value.email || null,
         telephone: formData.value.telephone || null,
-        type: formData.value.type,
         role_id: formData.value.role_id || undefined
       }
 
@@ -297,7 +268,6 @@ const handleSubmit = async () => {
         email: formData.value.email || null,
         telephone: formData.value.telephone || null,
         mot_de_passe: formData.value.mot_de_passe!,
-        type: formData.value.type,
         role_id: formData.value.role_id || undefined
       }
 
@@ -337,7 +307,6 @@ watch(() => props.isOpen, async (isOpen) => {
         nom_utilisateur: props.user.nom_utilisateur,
         email: props.user.email || '',
         telephone: props.user.telephone || '',
-        type: props.user.type,
         role_id: props.user.role?.id || '',
         mot_de_passe: '' // Never pre-fill password
       }
@@ -348,7 +317,6 @@ watch(() => props.isOpen, async (isOpen) => {
         email: '',
         telephone: '',
         mot_de_passe: '',
-        type: '',
         role_id: ''
       }
     }
@@ -360,7 +328,6 @@ watch(() => props.isOpen, async (isOpen) => {
       email: '',
       telephone: '',
       mot_de_passe: '',
-      type: '',
       role_id: ''
     }
     errors.value = {}
