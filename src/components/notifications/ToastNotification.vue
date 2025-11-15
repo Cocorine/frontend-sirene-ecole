@@ -13,7 +13,7 @@
       aria-live="polite"
       aria-atomic="true"
       :class="[
-        'max-w-sm w-full rounded-lg shadow-lg pointer-events-auto overflow-hidden',
+        'max-w-sm sm:max-w-md md:max-w-lg w-full rounded-lg shadow-lg pointer-events-auto overflow-hidden',
         'border-l-4',
         colorClasses
       ]"
