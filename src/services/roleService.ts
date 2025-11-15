@@ -115,6 +115,15 @@ class RoleService {
    */
   async deleteRole(id: string): Promise<ApiResponse<void>> {
     const response = await apiClient.delete(`/roles/${id}`)
+
+    // Handle 204 No Content response
+    if (response.status === 204) {
+      return {
+        success: true,
+        message: 'Rôle supprimé avec succès'
+      }
+    }
+
     return response.data
   }
 
@@ -149,11 +158,74 @@ class RoleService {
   }
 
   /**
-   * Get all available permissions
+   * Get all available permissions with pagination support
    */
-  async getPermissions(): Promise<ApiResponse<Permission[]>> {
-    const response = await apiClient.get('/permissions')
+  async getPermissions(page: number = 1, perPage: number = 15): Promise<ApiResponse<PaginatedResponse<Permission> | Permission[]>> {
+    const response = await apiClient.get('/permissions', {
+      params: { page, per_page: perPage }
+    })
     return response.data
+  }
+
+  /**
+   * Get all permissions (loads all pages automatically)
+   */
+  async getAllPermissions(): Promise<ApiResponse<Permission[]>> {
+    try {
+      // First request to get total pages
+      const firstPage = await apiClient.get('/permissions', {
+        params: { page: 1, per_page: 50 }
+      })
+
+      const firstPageData = firstPage.data
+
+      // Check if response is paginated
+      if (firstPageData.success && firstPageData.data?.data && firstPageData.data?.last_page) {
+        const paginatedData = firstPageData.data as PaginatedResponse<Permission>
+        let allPermissions = [...paginatedData.data]
+
+        // If there are more pages, load them all in parallel
+        if (paginatedData.last_page > 1) {
+          const remainingPages = Array.from(
+            { length: paginatedData.last_page - 1 },
+            (_, i) => i + 2
+          )
+
+          const remainingRequests = remainingPages.map(page =>
+            apiClient.get('/permissions', {
+              params: { page, per_page: 50 }
+            })
+          )
+
+          const remainingResponses = await Promise.all(remainingRequests)
+
+          remainingResponses.forEach(response => {
+            if (response.data.success && response.data.data?.data) {
+              allPermissions = [...allPermissions, ...response.data.data.data]
+            }
+          })
+        }
+
+        return {
+          success: true,
+          message: firstPageData.message,
+          data: allPermissions
+        }
+      }
+
+      // If not paginated, return as is
+      if (firstPageData.success && Array.isArray(firstPageData.data)) {
+        return {
+          success: true,
+          message: firstPageData.message,
+          data: firstPageData.data
+        }
+      }
+
+      return firstPageData
+    } catch (error) {
+      throw error
+    }
   }
 }
 

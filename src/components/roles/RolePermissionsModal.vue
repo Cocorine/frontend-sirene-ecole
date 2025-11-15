@@ -28,13 +28,8 @@
           </button>
         </div>
 
-        <!-- Loading state -->
-        <div v-if="loading" class="flex items-center justify-center py-12">
-          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-
         <!-- Permissions grid -->
-        <div v-else class="space-y-6">
+        <div class="space-y-6">
           <!-- Search -->
           <div class="relative">
             <Search class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" :size="20" />
@@ -43,6 +38,7 @@
               type="text"
               placeholder="Rechercher une permission..."
               class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              :disabled="loading"
             />
           </div>
 
@@ -50,10 +46,12 @@
           <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
             <span class="text-sm font-semibold text-gray-700">
               {{ selectedPermissions.length }} / {{ filteredPermissions.length }} permissions sélectionnées
+              <span v-if="loading" class="text-xs text-gray-500 ml-2">(Chargement...)</span>
             </span>
             <button
               @click="toggleSelectAll"
-              class="text-sm font-semibold text-blue-600 hover:text-blue-700"
+              :disabled="loading"
+              class="text-sm font-semibold text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {{ isAllSelected ? 'Tout désélectionner' : 'Tout sélectionner' }}
             </button>
@@ -61,6 +59,13 @@
 
           <!-- Permissions list -->
           <div class="max-h-96 overflow-y-auto space-y-2">
+            <!-- Loading indicator -->
+            <div v-if="loading && allPermissions.length === 0" class="flex items-center justify-center py-8">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mr-3"></div>
+              <span class="text-gray-600">Chargement des permissions...</span>
+            </div>
+
+            <!-- Permissions -->
             <label
               v-for="permission in filteredPermissions"
               :key="permission.id"
@@ -81,13 +86,10 @@
                 <p class="text-sm text-gray-600 mt-1" v-if="permission.description">
                   {{ permission.description }}
                 </p>
-                <span class="inline-block mt-2 px-2 py-1 text-xs font-mono bg-gray-100 text-gray-700 rounded">
-                  {{ permission.slug }}
-                </span>
               </div>
             </label>
 
-            <div v-if="filteredPermissions.length === 0" class="text-center py-12">
+            <div v-if="!loading && filteredPermissions.length === 0" class="text-center py-12">
               <Search :size="48" class="mx-auto text-gray-300 mb-4" />
               <p class="text-gray-600">Aucune permission trouvée</p>
             </div>
@@ -177,13 +179,20 @@ const toggleSelectAll = () => {
 const loadPermissions = async () => {
   loading.value = true
   try {
-    const response = await roleService.getPermissions()
+    const response = await roleService.getAllPermissions()
+    console.log('Permissions API Response:', response)
+
     if (response.success && response.data) {
       allPermissions.value = response.data
+      console.log('Loaded permissions:', allPermissions.value)
+    } else {
+      console.error('API returned error:', response)
+      notificationStore.error('Erreur', response.message || 'Impossible de charger les permissions')
     }
   } catch (error: any) {
     console.error('Failed to load permissions:', error)
-    notificationStore.error('Erreur', 'Impossible de charger les permissions')
+    console.error('Error details:', error.response?.data)
+    notificationStore.error('Erreur', error.response?.data?.message || 'Impossible de charger les permissions')
   } finally {
     loading.value = false
   }
@@ -216,17 +225,19 @@ const close = () => {
 }
 
 // Watch for modal opening
-watch(() => props.isOpen, async (isOpen) => {
+watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     searchQuery.value = ''
-    await loadPermissions()
 
-    // Set selected permissions from role
+    // Set selected permissions from role immediately
     if (props.role?.permissions) {
       selectedPermissions.value = props.role.permissions.map(p => p.id)
     } else {
       selectedPermissions.value = []
     }
+
+    // Load permissions in background (no await)
+    loadPermissions()
   }
 })
 </script>

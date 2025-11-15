@@ -47,27 +47,6 @@
             <p v-if="errors.nom" class="text-sm text-red-600 mt-1">{{ errors.nom }}</p>
           </div>
 
-          <!-- Slug -->
-          <div>
-            <label for="slug" class="block text-sm font-semibold text-gray-700 mb-2">
-              Slug (identifiant) <span class="text-red-500">*</span>
-            </label>
-            <input
-              id="slug"
-              v-model="formData.slug"
-              type="text"
-              required
-              placeholder="Ex: administrateur"
-              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
-              :class="{ 'border-red-500': errors.slug }"
-              @input="formatSlug"
-            />
-            <p class="text-xs text-gray-500 mt-1">
-              Format: lettres minuscules, chiffres et tirets uniquement
-            </p>
-            <p v-if="errors.slug" class="text-sm text-red-600 mt-1">{{ errors.slug }}</p>
-          </div>
-
           <!-- Description -->
           <div>
             <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">
@@ -82,6 +61,54 @@
               :class="{ 'border-red-500': errors.description }"
             ></textarea>
             <p v-if="errors.description" class="text-sm text-red-600 mt-1">{{ errors.description }}</p>
+          </div>
+
+          <!-- Permissions -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              Permissions
+            </label>
+            <div v-if="loadingPermissions" class="text-center py-4">
+              <span class="text-gray-500">Chargement des permissions...</span>
+            </div>
+            <div v-else>
+              <!-- Select All button -->
+              <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg mb-2">
+                <span class="text-sm font-semibold text-gray-700">
+                  {{ selectedPermissions.length }} / {{ allPermissions.length }} permissions sélectionnées
+                </span>
+                <button
+                  type="button"
+                  @click="toggleSelectAll"
+                  class="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  {{ isAllSelected ? 'Tout désélectionner' : 'Tout sélectionner' }}
+                </button>
+              </div>
+
+              <!-- Permissions list -->
+              <div class="max-h-64 overflow-y-auto border border-gray-300 rounded-lg p-3 space-y-2">
+                <label
+                  v-for="permission in allPermissions"
+                  :key="permission.id"
+                  class="flex items-start gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    :value="permission.id"
+                    v-model="selectedPermissions"
+                    class="mt-1 w-4 h-4 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+                  />
+                  <div class="flex-1">
+                    <span class="text-sm font-medium text-gray-900">{{ permission.nom }}</span>
+                    <p v-if="permission.description" class="text-xs text-gray-600">{{ permission.description }}</p>
+                  </div>
+                </label>
+                <div v-if="allPermissions.length === 0" class="text-center py-4 text-gray-500 text-sm">
+                  Aucune permission disponible
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Footer -->
@@ -111,7 +138,7 @@
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
 import { X } from 'lucide-vue-next'
-import roleService, { type Role, type CreateRoleData, type UpdateRoleData } from '../../services/roleService'
+import roleService, { type Role, type Permission, type CreateRoleData, type UpdateRoleData } from '../../services/roleService'
 import { useNotificationStore } from '../../stores/notifications'
 
 interface Props {
@@ -139,7 +166,15 @@ const formData = ref<CreateRoleData>({
 })
 
 const errors = ref<Record<string, string>>({})
+
+const isAllSelected = computed(() => {
+  return allPermissions.value.length > 0 &&
+    allPermissions.value.every(p => selectedPermissions.value.includes(p.id))
+})
 const loading = ref(false)
+const loadingPermissions = ref(false)
+const allPermissions = ref<Permission[]>([])
+const selectedPermissions = ref<string[]>([])
 
 const formatSlug = () => {
   formData.value.slug = formData.value.slug
@@ -149,17 +184,36 @@ const formatSlug = () => {
     .replace(/^-|-$/g, '')
 }
 
+const loadPermissions = async () => {
+  loadingPermissions.value = true
+  try {
+    const response = await roleService.getAllPermissions()
+    if (response.success && response.data) {
+      allPermissions.value = response.data
+    }
+  } catch (error: any) {
+    console.error('Failed to load permissions:', error)
+    notificationStore.error('Erreur', 'Impossible de charger les permissions')
+  } finally {
+    loadingPermissions.value = false
+  }
+}
+
+const toggleSelectAll = () => {
+  if (isAllSelected.value) {
+    // Deselect all
+    selectedPermissions.value = []
+  } else {
+    // Select all
+    selectedPermissions.value = allPermissions.value.map(p => p.id)
+  }
+}
+
 const validateForm = (): boolean => {
   errors.value = {}
 
   if (!formData.value.nom.trim()) {
     errors.value.nom = 'Le nom est requis'
-  }
-
-  if (!formData.value.slug.trim()) {
-    errors.value.slug = 'Le slug est requis'
-  } else if (!/^[a-z0-9-]+$/.test(formData.value.slug)) {
-    errors.value.slug = 'Le slug doit contenir uniquement des lettres minuscules, chiffres et tirets'
   }
 
   return Object.keys(errors.value).length === 0
@@ -173,17 +227,31 @@ const handleSubmit = async () => {
   loading.value = true
 
   try {
+    // Auto-generate slug from nom
+    const autoSlug = formData.value.nom
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove accents
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '')
+
     if (isEditMode.value && props.role) {
       // Update existing role
       const updateData: UpdateRoleData = {
         nom: formData.value.nom,
-        slug: formData.value.slug,
+        slug: autoSlug,
         description: formData.value.description
       }
 
       const response = await roleService.updateRole(props.role.id, updateData)
 
       if (response.success && response.data) {
+        // Sync permissions separately for update
+        if (selectedPermissions.value.length > 0) {
+          await roleService.syncPermissions(props.role.id, selectedPermissions.value)
+        }
         notificationStore.success('Rôle mis à jour', `Le rôle "${response.data.nom}" a été mis à jour avec succès`)
         emit('updated', response.data)
         close()
@@ -191,8 +259,15 @@ const handleSubmit = async () => {
         notificationStore.error('Erreur', response.message || 'Impossible de mettre à jour le rôle')
       }
     } else {
-      // Create new role
-      const response = await roleService.createRole(formData.value)
+      // Create new role with permissions
+      const createData: any = {
+        nom: formData.value.nom,
+        slug: autoSlug,
+        description: formData.value.description,
+        permission_ids: selectedPermissions.value
+      }
+
+      const response = await roleService.createRole(createData)
 
       if (response.success && response.data) {
         notificationStore.success('Rôle créé', `Le rôle "${response.data.nom}" a été créé avec succès`)
@@ -217,33 +292,46 @@ const handleSubmit = async () => {
 }
 
 const close = () => {
+  // Reset all form states
   formData.value = {
     nom: '',
     slug: '',
     description: ''
   }
   errors.value = {}
+  selectedPermissions.value = []
+  loading.value = false
+  loadingPermissions.value = false
+
   emit('close')
 }
 
 // Watch for modal opening
-watch(() => props.isOpen, (isOpen) => {
-  if (isOpen && props.role) {
-    // Populate form with role data for editing
-    formData.value = {
-      nom: props.role.nom,
-      slug: props.role.slug,
-      description: props.role.description || ''
+watch(() => props.isOpen, async (isOpen) => {
+  if (isOpen) {
+    // Load permissions when modal opens
+    await loadPermissions()
+
+    if (props.role) {
+      // Populate form with role data for editing
+      formData.value = {
+        nom: props.role.nom,
+        slug: props.role.slug,
+        description: props.role.description || ''
+      }
+      // Set selected permissions from role
+      selectedPermissions.value = props.role.permissions?.map(p => p.id) || []
+    } else {
+      // Reset form for creating
+      formData.value = {
+        nom: '',
+        slug: '',
+        description: ''
+      }
+      selectedPermissions.value = []
     }
-  } else {
-    // Reset form for creating
-    formData.value = {
-      nom: '',
-      slug: '',
-      description: ''
-    }
+    errors.value = {}
   }
-  errors.value = {}
 })
 
 // Auto-generate slug from nom
