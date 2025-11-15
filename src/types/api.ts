@@ -36,6 +36,35 @@ export interface ApiRole {
   updated_at?: string
 }
 
+// ==================== Géographie (Pays & Ville) ====================
+
+export interface ApiPays {
+  id: string
+  nom: string
+  code_iso: string
+  indicatif_tel: string
+  devise: string
+  fuseau_horaire: string
+  actif: boolean
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
+}
+
+export interface ApiVille {
+  id: string
+  pays_id: string
+  nom: string
+  code: string
+  latitude: number | null
+  longitude: number | null
+  actif: boolean
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
+  pays?: ApiPays
+}
+
 // ==================== User ====================
 
 export interface ApiUser {
@@ -162,18 +191,41 @@ export interface ApiPaginatedResponse<T> {
 
 // ==================== Users Management ====================
 
+export interface ApiUserInfo {
+  id: string
+  user_id: string
+  nom: string
+  prenom: string
+  telephone: string
+  email: string | null
+  ville_id: string | null
+  adresse: string | null
+  created_at?: string
+  updated_at?: string
+  deleted_at?: string | null
+  ville?: ApiVille | null
+}
+
 export interface ApiUserData {
   id: string
-  email: string | null
-  telephone: string | null
   nom_utilisateur: string
+  identifiant: string
   type: string // ADMIN, USER, ECOLE, TECHNICIEN
+  user_account_type_id: string | null
+  user_account_type_type: string | null
   role?: ApiRole
   role_id?: string
+  actif: boolean
+  statut: number
   doit_changer_mot_de_passe?: boolean
   mot_de_passe_change?: boolean
   created_at?: string
   updated_at?: string
+  deleted_at?: string | null
+  user_info?: ApiUserInfo
+  // Anciens champs pour compatibilité ascendante
+  email?: string | null
+  telephone?: string | null
 }
 
 export interface ApiUsersListResponse {
