@@ -89,8 +89,9 @@
 
           <!-- Rôle -->
           <div>
-            <label for="role_id" class="block text-sm font-semibold text-gray-700 mb-2">
+            <label for="role_id" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
               Rôle
+              <Loader2 v-if="loadingRoles" :size="16" class="animate-spin text-blue-600" aria-label="Chargement des rôles" />
             </label>
             <select
               id="role_id"
@@ -139,7 +140,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { X } from 'lucide-vue-next'
+import { X, Loader2 } from 'lucide-vue-next'
 import { useUsers } from '@/composables/useUsers'
 import roleService, { type Role } from '@/services/roleService'
 import type { ApiUserData, CreateUserRequest, UpdateUserRequest } from '@/types/api'
