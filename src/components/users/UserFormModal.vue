@@ -31,41 +31,42 @@
 
         <!-- Form -->
         <form @submit.prevent="handleSubmit" class="space-y-4">
-          <!-- Nom d'utilisateur -->
+          <!-- Prénom -->
           <div>
-            <label for="nom_utilisateur" class="block text-sm font-semibold text-gray-700 mb-2">
-              Nom complet <span class="text-red-500">*</span>
+            <label for="prenom" class="block text-sm font-semibold text-gray-700 mb-2">
+              Prénom <span class="text-red-500">*</span>
             </label>
             <input
-              id="nom_utilisateur"
-              v-model="formData.nom_utilisateur"
+              id="prenom"
+              v-model="formData.userInfoData.prenom"
               type="text"
               required
-              placeholder="Ex: Jean Ouédraogo"
+              placeholder="Ex: Jean"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
-              :class="{ 'border-red-500': errors.nom_utilisateur }"
-              :aria-invalid="!!errors.nom_utilisateur"
-              :aria-describedby="errors.nom_utilisateur ? 'nom-error' : undefined"
+              :class="{ 'border-red-500': errors.prenom }"
+              :aria-invalid="!!errors.prenom"
+              :aria-describedby="errors.prenom ? 'prenom-error' : undefined"
             />
-            <p v-if="errors.nom_utilisateur" id="nom-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.nom_utilisateur }}</p>
+            <p v-if="errors.prenom" id="prenom-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.prenom }}</p>
           </div>
 
-          <!-- Email -->
+          <!-- Nom -->
           <div>
-            <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">
-              Email
+            <label for="nom" class="block text-sm font-semibold text-gray-700 mb-2">
+              Nom <span class="text-red-500">*</span>
             </label>
             <input
-              id="email"
-              v-model="formData.email"
-              type="email"
-              placeholder="exemple@email.com"
+              id="nom"
+              v-model="formData.userInfoData.nom"
+              type="text"
+              required
+              placeholder="Ex: Ouédraogo"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
-              :class="{ 'border-red-500': errors.email }"
-              :aria-invalid="!!errors.email"
-              :aria-describedby="errors.email ? 'email-error' : undefined"
+              :class="{ 'border-red-500': errors.nom }"
+              :aria-invalid="!!errors.nom"
+              :aria-describedby="errors.nom ? 'nom-error' : undefined"
             />
-            <p v-if="errors.email" id="email-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.email }}</p>
+            <p v-if="errors.nom" id="nom-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.nom }}</p>
           </div>
 
           <!-- Téléphone -->
@@ -75,7 +76,7 @@
             </label>
             <input
               id="telephone"
-              v-model="formData.telephone"
+              v-model="formData.userInfoData.telephone"
               type="tel"
               required
               placeholder="+22670000000"
@@ -146,6 +147,7 @@ import roleService, { type Role } from '@/services/roleService'
 import type { ApiUserData, CreateUserRequest, UpdateUserRequest } from '@/types/api'
 import type { ApiAxiosError } from '@/types/api'
 import { useNotificationStore } from '@/stores/notifications'
+import { transformUserPayload, type UserPayloadWithUserInfoData } from '@/utils'
 
 interface Props {
   isOpen: boolean
@@ -166,11 +168,13 @@ const { createUser, updateUser } = useUsers()
 
 const isEditMode = computed(() => !!props.user)
 
-const formData = ref<CreateUserRequest & UpdateUserRequest>({
-  nom_utilisateur: '',
-  email: '',
-  telephone: '',
-  role_id: ''
+const formData = ref<UserPayloadWithUserInfoData>({
+  role_id: '',
+  userInfoData: {
+    nom: '',
+    prenom: '',
+    telephone: ''
+  }
 })
 
 const errors = ref<Record<string, string>>({})
@@ -197,16 +201,16 @@ const loadRoles = async () => {
 const validateForm = (): boolean => {
   errors.value = {}
 
-  if (!formData.value.nom_utilisateur?.trim()) {
-    errors.value.nom_utilisateur = 'Le nom est requis'
+  if (!formData.value.userInfoData.prenom?.trim()) {
+    errors.value.prenom = 'Le prénom est requis'
   }
 
-  if (!formData.value.telephone?.trim()) {
+  if (!formData.value.userInfoData.nom?.trim()) {
+    errors.value.nom = 'Le nom est requis'
+  }
+
+  if (!formData.value.userInfoData.telephone?.trim()) {
     errors.value.telephone = 'Le téléphone est requis'
-  }
-
-  if (formData.value.email && !formData.value.email.includes('@')) {
-    errors.value.email = 'Email invalide'
   }
 
   return Object.keys(errors.value).length === 0
@@ -220,13 +224,15 @@ const handleSubmit = async () => {
   loading.value = true
 
   try {
+    // Transformer le payload au format attendu par le backend
+    const transformedPayload = transformUserPayload(formData.value)
+
     if (isEditMode.value && props.user) {
       // Update existing user
       const updateData: UpdateUserRequest = {
-        nom_utilisateur: formData.value.nom_utilisateur,
-        email: formData.value.email || null,
-        telephone: formData.value.telephone || null,
-        role_id: formData.value.role_id || undefined
+        nom_utilisateur: transformedPayload.nom_utilisateur,
+        telephone: transformedPayload.telephone,
+        role_id: transformedPayload.role_id
       }
 
       const response = await updateUser(props.user.id, updateData)
@@ -238,10 +244,9 @@ const handleSubmit = async () => {
     } else {
       // Create new user
       const createData: CreateUserRequest = {
-        nom_utilisateur: formData.value.nom_utilisateur,
-        email: formData.value.email || null,
-        telephone: formData.value.telephone || null,
-        role_id: formData.value.role_id || undefined
+        nom_utilisateur: transformedPayload.nom_utilisateur,
+        telephone: transformedPayload.telephone,
+        role_id: transformedPayload.role_id
       }
 
       const response = await createUser(createData)
@@ -276,29 +281,41 @@ watch(() => props.isOpen, async (isOpen) => {
 
     if (props.user) {
       // Populate form with user data for editing
+      // Extraire le prénom et nom du nom_utilisateur
+      const fullName = props.user.nom_utilisateur || ''
+      const nameParts = fullName.trim().split(' ')
+      const prenom = nameParts[0] || ''
+      const nom = nameParts.slice(1).join(' ') || ''
+
       formData.value = {
-        nom_utilisateur: props.user.nom_utilisateur,
-        email: props.user.user_info?.email || props.user.email || '',
-        telephone: props.user.user_info?.telephone || props.user.telephone || '',
-        role_id: props.user.role?.id || ''
+        role_id: props.user.role?.id || '',
+        userInfoData: {
+          prenom: prenom,
+          nom: nom,
+          telephone: props.user.user_info?.telephone || props.user.telephone || ''
+        }
       }
     } else {
       // Reset form for creating
       formData.value = {
-        nom_utilisateur: '',
-        email: '',
-        telephone: '',
-        role_id: ''
+        role_id: '',
+        userInfoData: {
+          nom: '',
+          prenom: '',
+          telephone: ''
+        }
       }
     }
     errors.value = {}
   } else {
     // Reset all form states when modal closes
     formData.value = {
-      nom_utilisateur: '',
-      email: '',
-      telephone: '',
-      role_id: ''
+      role_id: '',
+      userInfoData: {
+        nom: '',
+        prenom: '',
+        telephone: ''
+      }
     }
     errors.value = {}
     loading.value = false
