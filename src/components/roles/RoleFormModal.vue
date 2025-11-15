@@ -140,6 +140,7 @@ import { ref, watch, computed } from 'vue'
 import { X } from 'lucide-vue-next'
 import roleService, { type Role, type Permission, type CreateRoleData, type UpdateRoleData } from '../../services/roleService'
 import { useNotificationStore } from '../../stores/notifications'
+import type { ApiAxiosError } from '../../types/api'
 
 interface Props {
   isOpen: boolean
@@ -191,8 +192,9 @@ const loadPermissions = async () => {
     if (response.success && response.data) {
       allPermissions.value = response.data
     }
-  } catch (error: any) {
-    console.error('Failed to load permissions:', error)
+  } catch (error) {
+    const axiosError = error as ApiAxiosError
+    console.error('Failed to load permissions:', axiosError)
     notificationStore.error('Erreur', 'Impossible de charger les permissions')
   } finally {
     loadingPermissions.value = false
@@ -260,7 +262,7 @@ const handleSubmit = async () => {
       }
     } else {
       // Create new role with permissions
-      const createData: any = {
+      const createData: CreateRoleData = {
         nom: formData.value.nom,
         slug: autoSlug,
         description: formData.value.description,
@@ -277,14 +279,15 @@ const handleSubmit = async () => {
         notificationStore.error('Erreur', response.message || 'Impossible de créer le rôle')
       }
     }
-  } catch (error: any) {
-    console.error('Failed to save role:', error)
-    const message = error.response?.data?.message || (isEditMode.value ? 'Impossible de mettre à jour le rôle' : 'Impossible de créer le rôle')
+  } catch (error) {
+    const axiosError = error as ApiAxiosError
+    console.error('Failed to save role:', axiosError)
+    const message = axiosError.response?.data?.message || (isEditMode.value ? 'Impossible de mettre à jour le rôle' : 'Impossible de créer le rôle')
     notificationStore.error('Erreur', message)
 
     // Handle validation errors from backend
-    if (error.response?.data?.errors) {
-      errors.value = error.response.data.errors
+    if (axiosError.response?.data?.errors) {
+      errors.value = axiosError.response.data.errors
     }
   } finally {
     loading.value = false

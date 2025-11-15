@@ -90,9 +90,10 @@ const handleSendOTP = async () => {
     } else {
       errorMessage.value = result.message || 'Erreur lors de l\'envoi du code OTP'
     }
-  } catch (err: any) {
-    console.error('Erreur lors de l\'envoi du code OTP:', err)
-    errorMessage.value = err.message || 'Une erreur est survenue'
+  } catch (err) {
+    const error = err as Error
+    console.error('Erreur lors de l\'envoi du code OTP:', error)
+    errorMessage.value = error.message || 'Une erreur est survenue'
   } finally {
     loading.value = false
   }

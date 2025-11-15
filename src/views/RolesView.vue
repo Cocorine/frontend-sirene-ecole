@@ -126,6 +126,7 @@ import Can from '../components/permissions/Can.vue'
 import { Shield, Plus, Check, Settings, Edit, Trash2 } from 'lucide-vue-next'
 import roleService, { type Role } from '../services/roleService'
 import { useNotificationStore } from '../stores/notifications'
+import type { ApiAxiosError } from '../types/api'
 
 const notificationStore = useNotificationStore()
 
@@ -156,9 +157,10 @@ const loadRoles = async () => {
     } else {
       notificationStore.error('Erreur', response.message || 'Impossible de charger les rôles')
     }
-  } catch (error: any) {
-    console.error('Failed to load roles:', error)
-    notificationStore.error('Erreur', error.response?.data?.message || 'Impossible de charger les rôles')
+  } catch (error) {
+    const axiosError = error as ApiAxiosError
+    console.error('Failed to load roles:', axiosError)
+    notificationStore.error('Erreur', axiosError.response?.data?.message || 'Impossible de charger les rôles')
   } finally {
     loading.value = false
   }
@@ -213,9 +215,10 @@ const confirmDelete = async (role: Role) => {
     } else {
       notificationStore.error('Erreur', response.message || 'Impossible de supprimer le rôle')
     }
-  } catch (error: any) {
-    console.error('Failed to delete role:', error)
-    notificationStore.error('Erreur', error.response?.data?.message || 'Impossible de supprimer le rôle')
+  } catch (error) {
+    const axiosError = error as ApiAxiosError
+    console.error('Failed to delete role:', axiosError)
+    notificationStore.error('Erreur', axiosError.response?.data?.message || 'Impossible de supprimer le rôle')
   }
 }
 

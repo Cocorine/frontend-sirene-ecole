@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, type ComponentPublicInstance } from 'vue'
 import { useRouter } from 'vue-router'
 import { Shield, ArrowLeft } from 'lucide-vue-next'
 import { useAuthStore } from '../stores/auth'
@@ -92,7 +92,7 @@ onMounted(() => {
   }
 })
 
-const setInputRef = (el: any, index: number) => {
+const setInputRef = (el: Element | ComponentPublicInstance | null, index: number) => {
   if (el) {
     inputRefs.value[index] = el as HTMLInputElement
   }
@@ -151,9 +151,10 @@ const handleVerifyOTP = async () => {
       inputRefs.value[0]?.focus()
     }
     // Success case is handled by the store (redirects to dashboard)
-  } catch (err: any) {
-    console.error('Erreur lors de la vérification:', err)
-    errorMessage.value = err.message || 'Une erreur est survenue'
+  } catch (err) {
+    const error = err as Error
+    console.error('Erreur lors de la vérification:', error)
+    errorMessage.value = error.message || 'Une erreur est survenue'
     otp.value = ['', '', '', '', '', '']
     inputRefs.value[0]?.focus()
   } finally {
@@ -176,9 +177,10 @@ const handleResendOTP = async () => {
     } else {
       errorMessage.value = result.message || 'Erreur lors du renvoi du code'
     }
-  } catch (err: any) {
-    console.error('Erreur lors du renvoi du code:', err)
-    errorMessage.value = err.message || 'Une erreur est survenue'
+  } catch (err) {
+    const error = err as Error
+    console.error('Erreur lors du renvoi du code:', error)
+    errorMessage.value = error.message || 'Une erreur est survenue'
   }
 }
 
