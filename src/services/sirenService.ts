@@ -22,8 +22,8 @@ import type {
  * Centralise tous les appels API liés aux sirènes
  */
 class SirenService {
-  private readonly basePath = '/sirens'
-  private readonly modelsPath = '/siren-models'
+  private readonly basePath = '/sirenes'
+  private readonly modelsPath = '/modeles-sirene'
 
   /**
    * Récupérer la liste de toutes les sirènes

@@ -37,18 +37,17 @@ export function useUsers() {
       }
     )
 
+    //console.log(result.data);
+
     if (result?.success && result.data) {
-      users.value = result.data.users || []
+      users.value = result.data.data || []
       console.log('✅ Utilisateurs chargés:', users.value.length)
 
-      if (result.data.pagination) {
-        currentPage.value = result.data.pagination.current_page
-        perPage.value = result.data.pagination.per_page
-        lastPage.value = result.data.pagination.last_page
-        totalUsers.value = result.data.pagination.total
-      } else {
-        totalUsers.value = result.data.users?.length || 0
-      }
+      // Adjust pagination parsing to match the provided API response format
+      currentPage.value = result.data.current_page
+      perPage.value = result.data.per_page
+      lastPage.value = result.data.last_page
+      totalUsers.value = result.data.total
     } else {
       console.warn('Aucun utilisateur chargé - Vérifier la réponse API:', result)
     }

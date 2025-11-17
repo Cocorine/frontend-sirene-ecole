@@ -68,7 +68,7 @@
             <tr>
               <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Utilisateur</th>
               <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Contact</th>
-              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
+              <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Statut</th>
               <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Rôle</th>
               <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date création</th>
               <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
@@ -88,7 +88,7 @@
                     </span>
                   </div>
                   <div>
-                    <p class="font-semibold text-gray-900">{{ user.nom_utilisateur }}</p>
+                    <p class="font-semibold text-gray-900">{{ user.user_info?.nom }} {{ user.user_info?.prenom }}</p>
                   </div>
                 </div>
               </td>
@@ -101,8 +101,12 @@
                 </p>
               </td>
               <td class="px-6 py-4">
-                <span :class="`inline-block px-3 py-1 rounded-full text-xs font-semibold ${typeColors[user.type]}`">
-                  {{ typeLabels[user.type] }}
+                <span
+                  :class="`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                    user.actif ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  }`"
+                >
+                  {{ user.actif ? 'Actif' : 'Inactif' }}
                 </span>
               </td>
               <td class="px-6 py-4">
@@ -116,13 +120,13 @@
               </td>
               <td class="px-6 py-4">
                 <div class="flex items-center justify-end gap-2">
-                  <button
+                  <!-- <button
                     @click="openRolesModal(user)"
                     class="text-sm text-purple-600 hover:text-purple-700 font-semibold"
                     title="Gérer le rôle"
                   >
                     Rôle
-                  </button>
+                  </button> -->
                   <button
                     @click="openEditModal(user)"
                     class="text-sm text-blue-600 hover:text-blue-700 font-semibold"
@@ -291,6 +295,7 @@ const openCreateModal = () => {
 
 const openEditModal = (user: ApiUserData) => {
   selectedUser.value = user
+  console.log(selectedUser.value);
   isFormModalOpen.value = true
 }
 

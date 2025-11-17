@@ -39,10 +39,11 @@ export function useSirens() {
       errorTitle: 'Erreur de chargement',
       errorMessage: 'Impossible de charger la liste des sirènes',
     })
+    //console.log(result.data);
 
     if (result?.success && result.data) {
-      sirens.value = result.data.sirens || []
-      console.log('✅ Sirènes chargées:', sirens.value.length)
+      /* sirens.value = result.data.sirens || []
+      console.log('✅ Sirènes chargées:', sirens.value.length, sirens.value)
 
       if (result.data.pagination) {
         currentPage.value = result.data.pagination.current_page
@@ -51,7 +52,17 @@ export function useSirens() {
         totalSirens.value = result.data.pagination.total
       } else {
         totalSirens.value = result.data.sirens?.length || 0
-      }
+      } */
+
+
+      sirens.value = result.data.data || []
+      console.log('✅ Utilisateurs chargés:', sirens.value.length)
+
+      // Adjust pagination parsing to match the provided API response format
+      currentPage.value = result.data.current_page
+      perPage.value = result.data.per_page
+      lastPage.value = result.data.last_page
+      totalSirens.value = result.data.total
     } else {
       console.warn('Aucune sirène chargée - Vérifier la réponse API:', result)
     }
@@ -89,8 +100,9 @@ export function useSirens() {
         'Sirène créée',
         'La sirène a été créée avec succès'
       )
-      // Recharger la liste après création
-      await loadSirens({ page: currentPage.value, per_page: perPage.value })
+      console.log('✅ Sirène créée avec succès:', result.data)
+      // Recharger la liste après création, en s'assurant de revenir à la première page
+      await loadSirens({ page: 1, per_page: perPage.value })
     }
 
     return result
@@ -161,8 +173,16 @@ export function useSirens() {
     )
 
     if (result?.success && result.data) {
-      sirenModels.value = result.data.models || []
+      sirenModels.value = result.data.data || []
       console.log('✅ Modèles de sirènes chargés:', sirenModels.value.length)
+
+      // Handle pagination for siren models
+      if (result.data.pagination) {
+        currentPage.value = result.data.pagination.current_page
+        perPage.value = result.data.pagination.per_page
+        lastPage.value = result.data.pagination.last_page
+        totalSirens.value = result.data.pagination.total // Re-using totalSirens for models pagination
+      }
     } else {
       console.warn(
         'Aucun modèle de sirène chargé - Vérifier la réponse API:',

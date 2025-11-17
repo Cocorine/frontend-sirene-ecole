@@ -230,10 +230,25 @@ export interface ApiUserData {
 
 export interface ApiUsersListResponse {
   success: boolean
-  message?: string
+  message?: string | null
   data?: {
-    users: ApiUserData[]
-    pagination?: ApiPagination
+    current_page: number
+    data: ApiUserData[] // This is the array of users
+    first_page_url?: string
+    from?: number | null
+    last_page: number
+    last_page_url?: string
+    links?: {
+      url: string | null
+      label: string
+      active: boolean
+    }[]
+    next_page_url?: string | null
+    path?: string
+    per_page: number
+    prev_page_url?: string | null
+    to?: number | null
+    total: number
   }
 }
 
@@ -291,36 +306,57 @@ export interface AssignRoleRequest {
 
 export interface ApiSirenModel {
   id: string
-  model_name: string
-  model_code: string
+  nom: string
+  reference: string
   description?: string | null
+  specifications?: Record<string, any>
   created_at?: string
   updated_at?: string
   deleted_at?: string | null
+}
+
+export interface ApiEcole {
+  id: string
+  nom: string
+  nom_complet: string
+  // Add other fields from the JSON if needed for display elsewhere
+}
+
+export interface ApiSite {
+  id: string
+  nom: string
+  adresse: string
+  // Add other fields from the JSON if needed for display elsewhere
 }
 
 export interface ApiSiren {
   id: string
   modele_id: string
+  ecole_id?: string | null // Added based on JSON
+  site_id?: string | null // Added based on JSON
   serial_number?: string
   date_fabrication: string
-  status?: string
+  status?: 'en_stock' | 'reserve' | 'installe' | 'en_panne' | 'hors_service'
   notes?: string | null
   created_at?: string
   updated_at?: string
   deleted_at?: string | null
   siren_models?: ApiSirenModel
+  ecole?: ApiEcole // Added based on JSON
+  site?: ApiSite // Added based on JSON
 }
 
 export interface CreateSirenRequest {
-  modele_id: string
+  modele_id?: string
   date_fabrication: string
+  status: 'en_stock' | 'reserve' | 'installe' | 'en_panne' | 'hors_service'
   notes?: string | null
 }
 
 export interface UpdateSirenRequest {
   modele_id?: string
   date_fabrication?: string
+  status?: 'en_stock' | 'reserve' | 'installe' | 'en_panne' | 'hors_service'
   notes?: string | null
 }
 
@@ -328,8 +364,23 @@ export interface ApiSirensListResponse {
   success: boolean
   message?: string
   data?: {
-    sirens: ApiSiren[]
-    pagination?: ApiPagination
+    current_page: number
+    data: ApiUserData[] // This is the array of users
+    first_page_url?: string
+    from?: number | null
+    last_page: number
+    last_page_url?: string
+    links?: {
+      url: string | null
+      label: string
+      active: boolean
+    }[]
+    next_page_url?: string | null
+    path?: string
+    per_page: number
+    prev_page_url?: string | null
+    to?: number | null
+    total: number
   }
 }
 
@@ -343,7 +394,7 @@ export interface ApiSirenModelsListResponse {
   success: boolean
   message?: string
   data?: {
-    models: ApiSirenModel[]
+    data: ApiSirenModel[] // Corrected from 'models' to 'data'
     pagination?: ApiPagination
   }
 }

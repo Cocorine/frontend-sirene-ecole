@@ -69,6 +69,25 @@
             <p v-if="errors.nom" id="nom-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.nom }}</p>
           </div>
 
+          <!-- Email -->
+          <div>
+            <label for="email" class="block text-sm font-semibold text-gray-700 mb-2">
+              Email <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="email"
+              v-model="formData.userInfoData.email"
+              type="email"
+              required
+              placeholder="Ex: jean.ouedraogo@example.com"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
+              :class="{ 'border-red-500': errors.email }"
+              :aria-invalid="!!errors.email"
+              :aria-describedby="errors.email ? 'email-error' : undefined"
+            />
+            <p v-if="errors.email" id="email-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.email }}</p>
+          </div>
+
           <!-- Téléphone -->
           <div>
             <label for="telephone" class="block text-sm font-semibold text-gray-700 mb-2">
@@ -86,6 +105,51 @@
               :aria-describedby="errors.telephone ? 'telephone-error' : undefined"
             />
             <p v-if="errors.telephone" id="telephone-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.telephone }}</p>
+          </div>
+
+          <!-- Ville -->
+          <div>
+            <label for="ville_id" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+              Ville
+              <Loader2 v-if="loadingCities" :size="16" class="animate-spin text-blue-600" aria-label="Chargement des villes" />
+            </label>
+            <select
+              id="ville_id"
+              v-model="formData.userInfoData.ville_id"
+              :disabled="loadingCities"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
+              :class="{ 'border-red-500': errors.ville_id, 'opacity-50 cursor-not-allowed': loadingCities }"
+              :aria-invalid="!!errors.ville_id"
+              :aria-describedby="errors.ville_id ? 'ville-error' : undefined"
+            >
+              <option :value="null">{{ loadingCities ? 'Chargement des villes...' : 'Sélectionner une ville' }}</option>
+              <option
+                v-for="city in availableCities"
+                :key="city.id"
+                :value="city.id"
+              >
+                {{ city.nom }}
+              </option>
+            </select>
+            <p v-if="errors.ville_id" id="ville-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.ville_id }}</p>
+          </div>
+
+          <!-- Adresse -->
+          <div>
+            <label for="adresse" class="block text-sm font-semibold text-gray-700 mb-2">
+              Adresse
+            </label>
+            <textarea
+              id="adresse"
+              v-model="formData.userInfoData.adresse"
+              rows="3"
+              placeholder="Ex: 123 Rue de l\'Indépendance"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
+              :class="{ 'border-red-500': errors.adresse }"
+              :aria-invalid="!!errors.adresse"
+              :aria-describedby="errors.adresse ? 'adresse-error' : undefined"
+            ></textarea>
+            <p v-if="errors.adresse" id="adresse-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.adresse }}</p>
           </div>
 
           <!-- Rôle -->
@@ -144,7 +208,8 @@ import { ref, watch, computed } from 'vue'
 import { X, Loader2 } from 'lucide-vue-next'
 import { useUsers } from '@/composables/useUsers'
 import roleService, { type Role } from '@/services/roleService'
-import type { ApiUserData, CreateUserRequest, UpdateUserRequest } from '@/types/api'
+import cityService from '@/services/cityService'
+import type { ApiUserData, CreateUserRequest, UpdateUserRequest, ApiVille } from '@/types/api'
 import type { ApiAxiosError } from '@/types/api'
 import { useNotificationStore } from '@/stores/notifications'
 
@@ -173,6 +238,9 @@ interface FormData {
     nom: string
     prenom: string
     telephone: string
+    email: string // New field
+    ville_id: string | null // New field
+    adresse: string // New field
   }
 }
 
@@ -181,7 +249,10 @@ const formData = ref<FormData>({
   userInfoData: {
     nom: '',
     prenom: '',
-    telephone: ''
+    telephone: '',
+    email: '', // New field
+    ville_id: null, // New field
+    adresse: '' // New field
   }
 })
 
@@ -189,6 +260,8 @@ const errors = ref<Record<string, string>>({})
 const loading = ref(false)
 const loadingRoles = ref(false)
 const availableRoles = ref<Role[]>([])
+const availableCities = ref<ApiVille[]>([])
+const loadingCities = ref(false)
 
 const loadRoles = async () => {
   loadingRoles.value = true
@@ -206,6 +279,22 @@ const loadRoles = async () => {
   }
 }
 
+const loadCities = async () => {
+  loadingCities.value = true
+  try {
+    const response = await cityService.getAllCities()
+    if (response.success && response.data) {
+      availableCities.value = response.data.data
+    }
+  } catch (error) {
+    const axiosError = error as ApiAxiosError
+    console.error('Failed to load cities:', axiosError)
+    notificationStore.error('Erreur', 'Impossible de charger les villes')
+  } finally {
+    loadingCities.value = false
+  }
+}
+
 const validateForm = (): boolean => {
   errors.value = {}
 
@@ -217,9 +306,17 @@ const validateForm = (): boolean => {
     errors.value.nom = 'Le nom est requis'
   }
 
+  if (!formData.value.userInfoData.email?.trim()) {
+    errors.value.email = 'L\'email est requis'
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.value.userInfoData.email)) {
+    errors.value.email = 'L\'email n\'est pas valide'
+  }
+
   if (!formData.value.userInfoData.telephone?.trim()) {
     errors.value.telephone = 'Le téléphone est requis'
   }
+
+  // ville_id and adresse are optional, no required validation for now
 
   return Object.keys(errors.value).length === 0
 }
@@ -239,7 +336,10 @@ const handleSubmit = async () => {
         userInfoData: {
           nom: formData.value.userInfoData.nom,
           prenom: formData.value.userInfoData.prenom,
-          telephone: formData.value.userInfoData.telephone
+          telephone: formData.value.userInfoData.telephone,
+          email: formData.value.userInfoData.email, // New field
+          ville_id: formData.value.userInfoData.ville_id, // New field
+          adresse: formData.value.userInfoData.adresse // New field
         }
       }
 
@@ -256,7 +356,10 @@ const handleSubmit = async () => {
         userInfoData: {
           nom: formData.value.userInfoData.nom,
           prenom: formData.value.userInfoData.prenom,
-          telephone: formData.value.userInfoData.telephone
+          telephone: formData.value.userInfoData.telephone,
+          email: formData.value.userInfoData.email, // New field
+          ville_id: formData.value.userInfoData.ville_id, // New field
+          adresse: formData.value.userInfoData.adresse // New field
         }
       }
 
@@ -287,23 +390,23 @@ const close = () => {
 // Watch for modal opening/closing
 watch(() => props.isOpen, async (isOpen) => {
   if (isOpen) {
-    // Load roles when modal opens
-    await loadRoles()
+    // Load roles and cities when modal opens
+    await Promise.all([loadRoles(), loadCities()])
 
     if (props.user) {
       // Populate form with user data for editing
-      // Extraire le prénom et nom du nom_utilisateur
-      const fullName = props.user.nom_utilisateur || ''
-      const nameParts = fullName.trim().split(' ')
-      const prenom = nameParts[0] || ''
-      const nom = nameParts.slice(1).join(' ') || ''
+      const prenom = props.user.user_info?.prenom || '';
+      const nom = props.user.user_info?.nom || '';
 
       formData.value = {
         role_id: props.user.role?.id || '',
         userInfoData: {
           prenom: prenom,
           nom: nom,
-          telephone: props.user.user_info?.telephone || props.user.telephone || ''
+          telephone: props.user.user_info?.telephone || props.user.telephone || '',
+          email: props.user.user_info?.email || props.user.email || '', // New field
+          ville_id: props.user.user_info?.ville_id || null, // New field
+          adresse: props.user.user_info?.adresse || '' // New field
         }
       }
     } else {
@@ -313,7 +416,10 @@ watch(() => props.isOpen, async (isOpen) => {
         userInfoData: {
           nom: '',
           prenom: '',
-          telephone: ''
+          telephone: '',
+          email: '',
+          ville_id: null,
+          adresse: ''
         }
       }
     }
@@ -325,12 +431,16 @@ watch(() => props.isOpen, async (isOpen) => {
       userInfoData: {
         nom: '',
         prenom: '',
-        telephone: ''
+        telephone: '',
+        email: '',
+        ville_id: null,
+        adresse: ''
       }
     }
     errors.value = {}
     loading.value = false
     loadingRoles.value = false
+    loadingCities.value = false // Reset loadingCities
   }
 })
 </script>

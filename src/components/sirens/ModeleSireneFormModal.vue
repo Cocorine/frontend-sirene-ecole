@@ -33,40 +33,135 @@
         <form @submit.prevent="handleSubmit" class="space-y-4">
           <!-- Nom du modèle -->
           <div>
-            <label for="model_name" class="block text-sm font-semibold text-gray-700 mb-2">
+            <label for="nom" class="block text-sm font-semibold text-gray-700 mb-2">
               Nom du modèle <span class="text-red-500">*</span>
             </label>
             <input
-              id="model_name"
-              v-model="formData.model_name"
+              id="nom"
+              v-model="formData.nom"
               type="text"
               required
               placeholder="Ex: SchoolBell Pro"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
-              :class="{ 'border-red-500': errors.model_name }"
-              :aria-invalid="!!errors.model_name"
-              :aria-describedby="errors.model_name ? 'model-name-error' : undefined"
+              :class="{ 'border-red-500': errors.nom }"
+              :aria-invalid="!!errors.nom"
+              :aria-describedby="errors.nom ? 'nom-error' : undefined"
             />
-            <p v-if="errors.model_name" id="model-name-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.model_name }}</p>
+            <p v-if="errors.nom" id="nom-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.nom }}</p>
           </div>
 
-          <!-- Code du modèle -->
+          <!-- Référence -->
           <div>
-            <label for="model_code" class="block text-sm font-semibold text-gray-700 mb-2">
-              Code du modèle <span class="text-red-500">*</span>
+            <label for="reference" class="block text-sm font-semibold text-gray-700 mb-2">
+              Référence <span class="text-red-500">*</span>
             </label>
             <input
-              id="model_code"
-              v-model="formData.model_code"
+              id="reference"
+              v-model="formData.reference"
               type="text"
               required
-              placeholder="Ex: SBP-100"
+              placeholder="Ex: REF-SB-001"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
-              :class="{ 'border-red-500': errors.model_code }"
-              :aria-invalid="!!errors.model_code"
-              :aria-describedby="errors.model_code ? 'model-code-error' : undefined"
+              :class="{ 'border-red-500': errors.reference }"
+              :aria-invalid="!!errors.reference"
+              :aria-describedby="errors.reference ? 'reference-error' : undefined"
             />
-            <p v-if="errors.model_code" id="model-code-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.model_code }}</p>
+            <p v-if="errors.reference" id="reference-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.reference }}</p>
+          </div>
+
+          <!-- Version Firmware -->
+          <div>
+            <label for="version_firmware" class="block text-sm font-semibold text-gray-700 mb-2">
+              Version Firmware
+            </label>
+            <input
+              id="version_firmware"
+              v-model="formData.version_firmware"
+              type="text"
+              placeholder="Ex: 1.0.0"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
+              :class="{ 'border-red-500': errors.version_firmware }"
+              :aria-invalid="!!errors.version_firmware"
+              :aria-describedby="errors.version_firmware ? 'version-firmware-error' : undefined"
+            />
+            <p v-if="errors.version_firmware" id="version-firmware-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.version_firmware }}</p>
+          </div>
+
+          <!-- Prix Unitaire -->
+          <div>
+            <label for="prix_unitaire" class="block text-sm font-semibold text-gray-700 mb-2">
+              Prix Unitaire <span class="text-red-500">*</span>
+            </label>
+            <input
+              id="prix_unitaire"
+              v-model.number="formData.prix_unitaire"
+              type="number"
+              step="0.01"
+              required
+              min="0"
+              placeholder="Ex: 150.00"
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
+              :class="{ 'border-red-500': errors.prix_unitaire }"
+              :aria-invalid="!!errors.prix_unitaire"
+              :aria-describedby="errors.prix_unitaire ? 'prix-unitaire-error' : undefined"
+            />
+            <p v-if="errors.prix_unitaire" id="prix-unitaire-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.prix_unitaire }}</p>
+          </div>
+
+          <!-- Spécifications -->
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-2">
+              Spécifications
+            </label>
+            <div v-for="(spec, index) in formData.specifications" :key="index" class="flex items-center gap-2 mb-2">
+              <div class="flex-1">
+                <input
+                  v-model="spec.key"
+                  type="text"
+                  placeholder="Clé (ex: Poids)"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  :class="{ 'border-red-500': errors[`spec_key_${index}`] }"
+                />
+                <p v-if="errors[`spec_key_${index}`]" class="text-sm text-red-600 mt-1">{{ errors[`spec_key_${index}`] }}</p>
+              </div>
+              <div class="flex-1">
+                <input
+                  v-model="spec.value"
+                  type="text"
+                  placeholder="Valeur (ex: 2kg)"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+              <button
+                type="button"
+                @click="removeSpecification(index)"
+                class="p-2 text-red-500 hover:bg-red-100 rounded-full"
+                aria-label="Supprimer la spécification"
+              >
+                <Trash2 :size="16" />
+              </button>
+            </div>
+            <button
+              type="button"
+              @click="addSpecification"
+              class="mt-2 text-sm font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+            >
+              <PlusCircle :size="16" />
+              Ajouter une spécification
+            </button>
+          </div>
+
+          <!-- Actif -->
+          <div class="flex items-center">
+            <input
+              id="actif"
+              v-model="formData.actif"
+              type="checkbox"
+              class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label for="actif" class="ml-2 block text-sm font-semibold text-gray-700">
+              Actif
+            </label>
           </div>
 
           <!-- Description -->
@@ -113,7 +208,7 @@
 
 <script setup lang="ts">
 import { ref, watch, computed } from 'vue'
-import { X } from 'lucide-vue-next'
+import { X, Trash2, PlusCircle } from 'lucide-vue-next'
 import sirenService from '@/services/sirenService'
 import type {
   ApiSirenModel,
@@ -141,25 +236,63 @@ const notificationStore = useNotificationStore()
 
 const isEditMode = computed(() => !!props.model)
 
-const formData = ref<CreateSirenModelRequest & UpdateSirenModelRequest>({
-  model_name: '',
-  model_code: '',
-  description: ''
+interface Specification {
+  key: string
+  value: string
+}
+
+const formData = ref<{
+  nom: string
+  reference: string
+  description: string
+  specifications: Specification[]
+  version_firmware: string
+  prix_unitaire: number
+  actif: boolean
+}>({
+  nom: '',
+  reference: '',
+  description: '',
+  specifications: [],
+  version_firmware: '',
+  prix_unitaire: 0,
+  actif: true,
 })
 
 const errors = ref<Record<string, string>>({})
 const loading = ref(false)
 
+// --- Specifications ---
+const addSpecification = () => {
+  formData.value.specifications.push({ key: '', value: '' })
+}
+
+const removeSpecification = (index: number) => {
+  formData.value.specifications.splice(index, 1)
+}
+// --------------------
+
 const validateForm = (): boolean => {
   errors.value = {}
 
-  if (!formData.value.model_name?.trim()) {
-    errors.value.model_name = 'Le nom du modèle est requis'
+  if (!formData.value.nom?.trim()) {
+    errors.value.nom = 'Le nom du modèle est requis'
   }
 
-  if (!formData.value.model_code?.trim()) {
-    errors.value.model_code = 'Le code du modèle est requis'
+  if (!formData.value.reference?.trim()) {
+    errors.value.reference = 'La référence est requise'
   }
+
+  if (formData.value.prix_unitaire === undefined || formData.value.prix_unitaire < 0) {
+    errors.value.prix_unitaire = 'Le prix unitaire est requis et doit être positif'
+  }
+
+  // Validate specifications: keys should not be empty
+  formData.value.specifications.forEach((spec, index) => {
+    if (!spec.key.trim()) {
+      errors.value[`spec_key_${index}`] = 'La clé de la spécification ne peut pas être vide'
+    }
+  })
 
   return Object.keys(errors.value).length === 0
 }
@@ -171,40 +304,36 @@ const handleSubmit = async () => {
 
   loading.value = true
 
+  // Transform specifications from array of objects to a single object
+  const specificationsObject = formData.value.specifications.reduce((obj, item) => {
+    if (item.key.trim()) { // Only add if key is not empty
+      obj[item.key] = item.value
+    }
+    return obj
+  }, {} as Record<string, string>)
+
   try {
+    const commonData = {
+      nom: formData.value.nom,
+      reference: formData.value.reference,
+      description: formData.value.description || null,
+      specifications: specificationsObject, // Use the transformed object
+      version_firmware: formData.value.version_firmware || null,
+      prix_unitaire: formData.value.prix_unitaire,
+      actif: formData.value.actif,
+    }
+
     if (isEditMode.value && props.model) {
-      // Update existing model
-      const updateData: UpdateSirenModelRequest = {
-        model_name: formData.value.model_name,
-        model_code: formData.value.model_code,
-        description: formData.value.description || null
-      }
-
-      const response = await sirenService.updateSirenModel(props.model.id, updateData)
-
+      const response = await sirenService.updateSirenModel(props.model.id, commonData)
       if (response?.success && response.data) {
-        notificationStore.success(
-          'Modèle modifié',
-          'Le modèle de sirène a été modifié avec succès'
-        )
+        notificationStore.success('Modèle modifié', 'Le modèle de sirène a été modifié avec succès')
         emit('updated', response.data)
         close()
       }
     } else {
-      // Create new model
-      const createData: CreateSirenModelRequest = {
-        model_name: formData.value.model_name,
-        model_code: formData.value.model_code,
-        description: formData.value.description || null
-      }
-
-      const response = await sirenService.createSirenModel(createData)
-
+      const response = await sirenService.createSirenModel(commonData)
       if (response?.success && response.data) {
-        notificationStore.success(
-          'Modèle créé',
-          'Le modèle de sirène a été créé avec succès'
-        )
+        notificationStore.success('Modèle créé', 'Le modèle de sirène a été créé avec succès')
         emit('created', response.data)
         close()
       }
@@ -213,16 +342,17 @@ const handleSubmit = async () => {
     const axiosError = error as ApiAxiosError
     console.error('Failed to save siren model:', axiosError)
 
-    // Handle validation errors from backend
     if (axiosError.response?.data?.errors) {
-      errors.value = axiosError.response.data.errors as Record<string, string>
+      const backendErrors = axiosError.response.data.errors as Record<string, string[]>
+      const formattedErrors: Record<string, string> = {}
+      for (const field in backendErrors) {
+        if (backendErrors[field] && backendErrors[field].length > 0) {
+          formattedErrors[field] = backendErrors[field][0]
+        }
+      }
+      errors.value = formattedErrors
     } else {
-      notificationStore.error(
-        'Erreur',
-        isEditMode.value
-          ? 'Impossible de modifier le modèle de sirène'
-          : 'Impossible de créer le modèle de sirène'
-      )
+      notificationStore.error('Erreur', isEditMode.value ? 'Impossible de modifier le modèle' : 'Impossible de créer le modèle')
     }
   } finally {
     loading.value = false
@@ -238,26 +368,41 @@ watch(() => props.isOpen, (isOpen) => {
   if (isOpen) {
     if (props.model) {
       // Populate form with model data for editing
+      const specs = props.model.specifications || {}
+      const specificationsArray = Object.keys(specs).map(key => ({ key, value: specs[key] }))
+
       formData.value = {
-        model_name: props.model.model_name,
-        model_code: props.model.model_code,
-        description: props.model.description || ''
+        nom: props.model.nom,
+        reference: props.model.reference,
+        description: props.model.description || '',
+        specifications: specificationsArray,
+        version_firmware: props.model.version_firmware || '',
+        prix_unitaire: props.model.prix_unitaire,
+        actif: props.model.actif,
       }
     } else {
       // Reset form for creating
       formData.value = {
-        model_name: '',
-        model_code: '',
-        description: ''
+        nom: '',
+        reference: '',
+        description: '',
+        specifications: [],
+        version_firmware: '',
+        prix_unitaire: 0,
+        actif: true,
       }
     }
     errors.value = {}
   } else {
     // Reset all form states when modal closes
     formData.value = {
-      model_name: '',
-      model_code: '',
-      description: ''
+      nom: '',
+      reference: '',
+      description: '',
+      specifications: [],
+      version_firmware: '',
+      prix_unitaire: 0,
+      actif: true,
     }
     errors.value = {}
     loading.value = false

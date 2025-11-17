@@ -34,29 +34,28 @@
           <!-- Modèle de sirène -->
           <div>
             <label for="modele_id" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
-              Modèle de sirène <span class="text-red-500">*</span>
+              Modèle de sirène
               <Loader2 v-if="loadingModels" :size="16" class="animate-spin text-blue-600" aria-label="Chargement des modèles" />
             </label>
             <select
               id="modele_id"
               v-model="formData.modele_id"
-              required
               :disabled="loadingModels"
               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
               :class="{ 'border-red-500': errors.modele_id, 'opacity-50 cursor-not-allowed': loadingModels }"
               :aria-invalid="!!errors.modele_id"
               :aria-describedby="errors.modele_id ? 'modele-error' : undefined"
             >
-              <option value="">{{ loadingModels ? 'Chargement des modèles...' : 'Sélectionnez un modèle' }}</option>
+              <option value="">{{ loadingModels ? 'Chargement des modèles...' : 'Sélectionnez un modèle (optionnel)' }}</option>
               <option
                 v-for="model in availableModels"
                 :key="model.id"
                 :value="model.id"
               >
-                {{ model.model_name }} ({{ model.model_code }})
+                {{ model.nom }} ({{ model.reference }})
               </option>
             </select>
-            <p v-if="errors.modele_id" id="modele-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.modele_id }}</p>
+            <p v-if="errors.modele_id" id="modele-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.modele_id[0] }}</p>
           </div>
 
           <!-- Date de fabrication -->
@@ -74,7 +73,30 @@
               :aria-invalid="!!errors.date_fabrication"
               :aria-describedby="errors.date_fabrication ? 'date-error' : undefined"
             />
-            <p v-if="errors.date_fabrication" id="date-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.date_fabrication }}</p>
+            <p v-if="errors.date_fabrication" id="date-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.date_fabrication[0] }}</p>
+          </div>
+
+          <!-- Statut -->
+          <div>
+            <label for="status" class="block text-sm font-semibold text-gray-700 mb-2">
+              Statut <span class="text-red-500">*</span>
+            </label>
+            <select
+              id="status"
+              v-model="formData.status"
+              required
+              class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus-visible:ring-2 focus-visible:ring-blue-600"
+              :class="{ 'border-red-500': errors.status }"
+              :aria-invalid="!!errors.status"
+              :aria-describedby="errors.status ? 'status-error' : undefined"
+            >
+              <option value="en_stock">En stock</option>
+              <option value="reserve">Réservée</option>
+              <option value="installe">Installée</option>
+              <option value="en_panne">En panne</option>
+              <option value="hors_service">Hors service</option>
+            </select>
+            <p v-if="errors.status" id="status-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.status[0] }}</p>
           </div>
 
           <!-- Notes -->
@@ -92,7 +114,7 @@
               :aria-invalid="!!errors.notes"
               :aria-describedby="errors.notes ? 'notes-error' : undefined"
             />
-            <p v-if="errors.notes" id="notes-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.notes }}</p>
+            <p v-if="errors.notes" id="notes-error" class="text-sm text-red-600 mt-1" role="alert">{{ errors.notes[0] }}</p>
           </div>
 
           <!-- Footer -->
@@ -131,6 +153,7 @@ import type {
 } from '@/types/api'
 import type { ApiAxiosError } from '@/types/api'
 import { useNotificationStore } from '@/stores/notifications'
+import { convertDMYToYMD, convertYMDToDMY, isValidDateFormat } from '@/utils/dateFormatter'
 
 interface Props {
   isOpen: boolean
@@ -154,10 +177,11 @@ const isEditMode = computed(() => !!props.siren)
 const formData = ref<CreateSirenRequest & UpdateSirenRequest>({
   modele_id: '',
   date_fabrication: '',
+  status: 'en_stock',
   notes: ''
 })
 
-const errors = ref<Record<string, string>>({})
+const errors = ref<Record<string, string[]>>({})
 const loading = ref(false)
 const loadingModels = ref(false)
 const availableModels = ref<ApiSirenModel[]>([])
@@ -179,12 +203,14 @@ const loadModels = async () => {
 const validateForm = (): boolean => {
   errors.value = {}
 
-  if (!formData.value.modele_id?.trim()) {
-    errors.value.modele_id = 'Le modèle de sirène est requis'
+  if (!formData.value.date_fabrication?.trim()) {
+    errors.value.date_fabrication = ['La date de fabrication est requise']
+  } else if (!isValidDateFormat(convertYMDToDMY(formData.value.date_fabrication))) {
+    errors.value.date_fabrication = ['Le format de la date de fabrication doit être JJ/MM/AAAA']
   }
 
-  if (!formData.value.date_fabrication?.trim()) {
-    errors.value.date_fabrication = 'La date de fabrication est requise'
+  if (!formData.value.status?.trim()) {
+    errors.value.status = ['Le statut est requis']
   }
 
   return Object.keys(errors.value).length === 0
@@ -198,30 +224,21 @@ const handleSubmit = async () => {
   loading.value = true
 
   try {
+    const dataPayload = {
+      date_fabrication: convertYMDToDMY(formData.value.date_fabrication),
+      status: formData.value.status,
+      notes: formData.value.notes || null,
+      modele_id: formData.value.modele_id || undefined,
+    }
+
     if (isEditMode.value && props.siren) {
-      // Update existing siren
-      const updateData: UpdateSirenRequest = {
-        modele_id: formData.value.modele_id,
-        date_fabrication: formData.value.date_fabrication,
-        notes: formData.value.notes || null
-      }
-
-      const response = await updateSiren(props.siren.id, updateData)
-
+      const response = await updateSiren(props.siren.id, dataPayload)
       if (response?.success && response.data) {
         emit('updated', response.data)
         close()
       }
     } else {
-      // Create new siren
-      const createData: CreateSirenRequest = {
-        modele_id: formData.value.modele_id,
-        date_fabrication: formData.value.date_fabrication,
-        notes: formData.value.notes || null
-      }
-
-      const response = await createSiren(createData)
-
+      const response = await createSiren(dataPayload)
       if (response?.success && response.data) {
         emit('created', response.data)
         close()
@@ -231,9 +248,8 @@ const handleSubmit = async () => {
     const axiosError = error as ApiAxiosError
     console.error('Failed to save siren:', axiosError)
 
-    // Handle validation errors from backend
     if (axiosError.response?.data?.errors) {
-      errors.value = axiosError.response.data.errors as Record<string, string>
+      errors.value = axiosError.response.data.errors as Record<string, string[]>
     }
   } finally {
     loading.value = false
@@ -247,30 +263,43 @@ const close = () => {
 // Watch for modal opening/closing
 watch(() => props.isOpen, async (isOpen) => {
   if (isOpen) {
-    // Load models when modal opens
     await loadModels()
 
     if (props.siren) {
-      // Populate form with siren data for editing
+      // Robustly parse the incoming date and format it to YYYY-MM-DD for the input
+      let formattedDate = ''
+      if (props.siren.date_fabrication) {
+        const date = new Date(props.siren.date_fabrication)
+        if (!isNaN(date.getTime())) {
+          const year = date.getFullYear()
+          const month = (date.getMonth() + 1).toString().padStart(2, '0')
+          const day = date.getDate().toString().padStart(2, '0')
+          formattedDate = `${year}-${month}-${day}`
+        } else {
+          console.error('Could not parse date from backend:', props.siren.date_fabrication)
+        }
+      }
+
       formData.value = {
-        modele_id: props.siren.modele_id,
-        date_fabrication: props.siren.date_fabrication,
+        modele_id: props.siren.modele_id || '',
+        date_fabrication: formattedDate,
+        status: props.siren.status || 'en_stock',
         notes: props.siren.notes || ''
       }
     } else {
-      // Reset form for creating
       formData.value = {
         modele_id: '',
         date_fabrication: '',
+        status: 'en_stock',
         notes: ''
       }
     }
     errors.value = {}
   } else {
-    // Reset all form states when modal closes
     formData.value = {
       modele_id: '',
       date_fabrication: '',
+      status: 'en_stock',
       notes: ''
     }
     errors.value = {}

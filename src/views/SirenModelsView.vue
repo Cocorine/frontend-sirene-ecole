@@ -6,13 +6,15 @@
           <h1 class="text-3xl font-bold text-gray-900">Modèles de sirènes</h1>
           <p class="text-gray-600 mt-1">Catalogue des modèles disponibles</p>
         </div>
-        <button
-          @click="openCreateModal"
-          class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all"
-        >
-          <Plus :size="20" />
-          Ajouter un modèle
-        </button>
+        <Can permission="manage_siren_models">
+          <button
+            @click="openCreateModal"
+            class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all"
+          >
+            <Plus :size="20" />
+            Ajouter un modèle
+          </button>
+        </Can>
       </div>
 
       <!-- Loading State -->
@@ -32,29 +34,40 @@
               <Bell :size="24" class="text-white" />
             </div>
             <span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold">
-              {{ model.model_code }}
+              {{ model.reference }}
             </span>
           </div>
 
-          <h3 class="text-lg font-bold text-gray-900 mb-1">{{ model.model_name }}</h3>
+          <h3 class="text-lg font-bold text-gray-900 mb-1">{{ model.nom }}</h3>
           <p v-if="model.description" class="text-sm text-gray-600 mb-4">{{ model.description }}</p>
           <p v-else class="text-sm text-gray-400 italic mb-4">Aucune description</p>
 
+          <!-- Specifications -->
+          <div v-if="model.specifications && Object.keys(model.specifications).length > 0" class="space-y-2 text-sm mb-4">
+            <div v-for="(value, key) in model.specifications" :key="key" class="flex items-center gap-2 text-gray-600">
+              <ClipboardList :size="16" class="text-gray-400" />
+              <span class="font-semibold">{{ key }}:</span>
+              <span>{{ value }}</span>
+            </div>
+          </div>
+
           <div class="mt-4 pt-4 border-t border-gray-100 flex items-center justify-end gap-2">
-            <button
-              @click="openEditModal(model)"
-              class="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1"
-            >
-              <Edit :size="14" />
-              Modifier
-            </button>
-            <button
-              @click="handleDeleteModel(model.id)"
-              class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1"
-            >
-              <Trash2 :size="14" />
-              Supprimer
-            </button>
+            <Can permission="manage_siren_models">
+              <button
+                @click="openEditModal(model)"
+                class="px-3 py-1.5 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-1"
+              >
+                <Edit :size="14" />
+                Modifier
+              </button>
+              <button
+                @click="handleDeleteModel(model.id)"
+                class="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-1"
+              >
+                <Trash2 :size="14" />
+                Supprimer
+              </button>
+            </Can>
           </div>
         </div>
       </div>
@@ -64,12 +77,14 @@
         <Bell :size="64" class="text-gray-300 mx-auto mb-4" />
         <h3 class="text-lg font-semibold text-gray-900 mb-2">Aucun modèle de sirène</h3>
         <p class="text-gray-600 mb-4">Commencez par ajouter un modèle de sirène</p>
-        <button
-          @click="openCreateModal"
-          class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all"
-        >
-          Ajouter un modèle
-        </button>
+        <Can permission="manage_siren_models">
+          <button
+            @click="openCreateModal"
+            class="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg font-semibold hover:from-blue-700 hover:to-cyan-700 transition-all"
+          >
+            Ajouter un modèle
+          </button>
+        </Can>
       </div>
     </div>
 
@@ -88,7 +103,8 @@
 import { ref, onMounted } from 'vue'
 import DashboardLayout from '../components/layout/DashboardLayout.vue'
 import ModeleSireneFormModal from '../components/sirens/ModeleSireneFormModal.vue'
-import { Bell, Plus, Edit, Trash2 } from 'lucide-vue-next'
+import { Bell, Plus, Edit, Trash2, ClipboardList } from 'lucide-vue-next'
+import { Can } from '@/components/permissions'
 import { useSirens } from '@/composables/useSirens'
 import { useNotificationStore } from '@/stores/notifications'
 import sirenService from '@/services/sirenService'
